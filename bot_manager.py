@@ -46,7 +46,7 @@ class BotManager:
             setup_collector_handlers(dp, db_id)
 
             if USE_WEBHOOK:
-                webhook_url = f"{WEBHOOK_URL}/webhook/bot/{db_id}"
+                webhook_url = f"{WEBHOOK_URL}/api/webhook/bot/{db_id}"
                 await bot.set_webhook(webhook_url)
                 task = None
                 logging.info(f"Bot {db_id} webhook set to {webhook_url}")

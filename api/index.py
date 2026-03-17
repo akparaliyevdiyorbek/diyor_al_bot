@@ -2,6 +2,11 @@ import logging
 from fastapi import FastAPI, Request
 from aiogram import Bot, Dispatcher
 from aiogram.types import Update
+import sys
+import os
+
+# Add parent directory to path to allow importing modules correctly
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from config import WEBHOOK_URL, MAIN_BOT_TOKEN
 from bot_manager import bot_manager
@@ -21,7 +26,7 @@ async def on_startup():
     logging.info(f"Starting webhook server. Webhook URL: {WEBHOOK_URL}")
     if WEBHOOK_URL:
         # Set webhook for main bot
-        await main_bot.set_webhook(f"{WEBHOOK_URL}/webhook/main")
+        await main_bot.set_webhook(f"{WEBHOOK_URL}/api/webhook/main")
         logging.info("Main bot webhook set.")
 
 @app.on_event("shutdown")
@@ -35,7 +40,7 @@ async def on_shutdown():
     for db_id in list(bot_manager.running_bots.keys()):
         await bot_manager.stop_bot(db_id)
 
-@app.post("/webhook/main")
+@app.post("/api/webhook/main")
 async def main_bot_webhook(request: Request):
     try:
         update_dict = await request.json()
@@ -45,7 +50,7 @@ async def main_bot_webhook(request: Request):
         logging.error(f"Error processing main bot webhook: {e}")
     return {"ok": True}
 
-@app.post("/webhook/bot/{db_id}")
+@app.post("/api/webhook/bot/{db_id}")
 async def collector_bot_webhook(db_id: int, request: Request):
     bot_data = await bot_manager.get_or_create_bot(db_id)
     if not bot_data:
