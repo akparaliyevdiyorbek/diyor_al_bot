@@ -19,8 +19,8 @@ A powerful, multi-threaded telegram bot management system. It allows a single ow
 ### 2. Installation
 Clone the repo and install dependencies:
 ```bash
-git clone https://github.com/your-username/telegram-multi-bot-manager.git
-cd telegram-multi-bot-manager
+git clone https://github.com/hayolnoma/get_json_bot.git
+cd get_json_bot
 pip install -r requirements.txt
 ```
 
