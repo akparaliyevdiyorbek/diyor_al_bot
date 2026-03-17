@@ -59,4 +59,3 @@ Ensure your Supabase project contains the following tables:
 ---
 *Created by the amazing power of Python and Aiogram 3!* 💎
 # get_json_bot
-# get_json_bot
