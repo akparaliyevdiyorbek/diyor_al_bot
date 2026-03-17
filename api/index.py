@@ -16,15 +16,15 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 
 app = FastAPI()
 
-# Initialize Main Bot
-main_bot = Bot(token=MAIN_BOT_TOKEN)
+# Initialize Main Bot (with safety check in case tokens are missing on Vercel setup)
+main_bot = Bot(token=MAIN_BOT_TOKEN) if MAIN_BOT_TOKEN else None
 main_dp = Dispatcher()
 main_dp.include_router(main_router)
 
 @app.on_event("startup")
 async def on_startup():
     logging.info(f"Starting webhook server. Webhook URL: {WEBHOOK_URL}")
-    if WEBHOOK_URL:
+    if WEBHOOK_URL and main_bot:
         # Set webhook for main bot
         await main_bot.set_webhook(f"{WEBHOOK_URL}/api/webhook/main")
         logging.info("Main bot webhook set.")
@@ -32,9 +32,10 @@ async def on_startup():
 @app.on_event("shutdown")
 async def on_shutdown():
     logging.info("Shutting down webhook server.")
-    if WEBHOOK_URL:
+    if WEBHOOK_URL and main_bot:
         await main_bot.delete_webhook()
-    await main_bot.session.close()
+    if main_bot:
+        await main_bot.session.close()
     
     # Close all running bots
     for db_id in list(bot_manager.running_bots.keys()):
@@ -42,6 +43,9 @@ async def on_shutdown():
 
 @app.post("/api/webhook/main")
 async def main_bot_webhook(request: Request):
+    if not main_bot:
+        return {"error": "Main bot token missing"}
+        
     try:
         update_dict = await request.json()
         update = Update(**update_dict)
