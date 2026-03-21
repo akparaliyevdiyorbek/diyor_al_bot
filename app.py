@@ -24,6 +24,9 @@ dp = Dispatcher()
 
 @dp.message(F.text)
 async def chat_with_ai(message: types.Message):
+    user = message.from_user
+    logging.info(f"👤 Kim ishlatyapti: {user.full_name} (@{user.username}) | ID: {user.id} | Xabar: {message.text}")
+    
     sent_message = await message.reply("⏳ <i>O'ylayapman...</i>", parse_mode="HTML")
     try:
         response = await model.generate_content_async(message.text, stream=True)
