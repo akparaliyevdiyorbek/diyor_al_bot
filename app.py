@@ -21,6 +21,7 @@ load_dotenv()
 
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN") or ""
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY") or ""
+ADMIN_ID = os.getenv("ADMIN_ID")
 
 genai.configure(api_key=GEMINI_API_KEY)  # type: ignore
 model = genai.GenerativeModel(
@@ -68,6 +69,16 @@ def save_user(user_id, full_name, username):
         return True
     return False
 
+async def notify_admin(user: types.User):
+    if not ADMIN_ID or not ADMIN_ID.isdigit():
+        return
+    try:
+        uname = f"@{user.username}" if user.username else "yo'q"
+        text = f"🔔 <b>YANGI ODAM QO'SHILDI!</b>\n\n👤 <b>Ism:</b> {user.full_name}\n🔗 <b>User:</b> {uname}\n🆔 <b>ID:</b> <code>{user.id}</code>\n🕰 <b>Vaqt:</b> {time.strftime('%Y-%m-%d %H:%M:%S')}"
+        await bot.send_message(chat_id=int(ADMIN_ID), text=text, parse_mode="HTML")
+    except Exception as e:
+        logging.error(f"Adminga xabar yuborishda xatolik: {e}")
+
 @dp.message(F.text == "/stat")
 async def bot_stats(message: types.Message):
     users = get_all_users()
@@ -99,6 +110,7 @@ async def start_cmd(message: types.Message, state: FSMContext):
     is_new = save_user(user.id, user.full_name, user.username)
     if is_new:
         logging.info(f"✨ YANGI: {user.full_name}")
+        await notify_admin(user)
     await message.reply(f"Assalomu alaykum, {user.first_name}! \nO'zingizga kerakli bo'limni tanlang 👇", reply_markup=get_main_menu())
 
 @dp.message(F.text == "🧠 AI Repetitor")
@@ -192,6 +204,7 @@ async def chat_with_ai(message: types.Message, state: FSMContext):
     is_new = save_user(user.id, user.full_name, user.username)
     if is_new:
         logging.info(f"✨ YANGI FOYDALANUVCHI: {user.full_name} (@{user.username}) | ID: {user.id}")
+        await notify_admin(user)
         
     logging.info(f"👤 Kim ishlatyapti: {user.full_name} (@{user.username}) | ID: {user.id} | Xabar: {message.text}")
     
