@@ -1,0 +1,8 @@
+Line 19: "configure" is not exported from module "google.generativeai"
+Line 20: "GenerativeModel" is not exported from module "google.generativeai"
+Line 22: Argument of type "str | None" cannot be assigned to parameter "token" of type "str" in function "__init__"
+Â Â Type "str | None" is not assignable to type "str"
+Â Â Â Â "None" is not assignable to "str"
+Line 28: "full_name" is not a known attribute of "None"
+Line 28: "username" is not a known attribute of "None"
+Line 28: "id" is not a known attribute of "None"

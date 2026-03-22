@@ -1,0 +1,16 @@
+{
+    "python.defaultInterpreterPath": "${workspaceFolder}/venv/Scripts/python.exe",
+    "python.analysis.typeCheckingMode": "basic",
+    "python.analysis.diagnosticSeverityOverrides": {
+        "reportUnknownMemberType": "none",
+        "reportMissingTypeStubs": "none",
+        "reportUnknownVariableType": "none",
+        "reportUnknownArgumentType": "none",
+        "reportGeneralTypeIssues": "none",
+        "reportMissingModuleSource": "none"
+    },
+    "pyre2.pythonPath": "${workspaceFolder}/venv/Scripts/python.exe",
+    "pyre2.extraPaths": [
+        "${workspaceFolder}/venv/Lib/site-packages"
+    ]
+}
