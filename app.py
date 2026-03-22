@@ -9,6 +9,11 @@ from typing import Dict, Any
 
 from aiogram import Bot, Dispatcher, types, F # type: ignore
 from aiogram.exceptions import TelegramBadRequest
+from aiogram.fsm.state import State, StatesGroup
+from aiogram.fsm.context import FSMContext
+from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, FSInputFile
+from aiogram.utils.keyboard import ReplyKeyboardBuilder
+from gtts import gTTS
 import google.generativeai as genai
 
 # .env faylidan o'zgaruvchilarni yuklash (lokal muhit uchun)
@@ -25,6 +30,18 @@ model = genai.GenerativeModel(
 
 bot = Bot(token=TELEGRAM_TOKEN)
 dp = Dispatcher()
+
+class BotStates(StatesGroup):
+    waiting_for_audio_text = State()
+
+def get_main_menu():
+    builder = ReplyKeyboardBuilder()
+    builder.add(KeyboardButton(text="🧠 AI Repetitor"))
+    builder.add(KeyboardButton(text="🕒 Namoz vaqtlari"))
+    builder.add(KeyboardButton(text="📝 Text-to-Audio"))
+    builder.add(KeyboardButton(text="📈 Valyuta kursi"))
+    builder.adjust(2, 2)
+    return builder.as_markup(resize_keyboard=True)
 
 USERS_FILE = "user.json"
 
@@ -72,8 +89,98 @@ async def bot_stats(message: types.Message):
     await message.reply(text, parse_mode="HTML")
     return
 
+@dp.message(F.text == "/start")
+async def start_cmd(message: types.Message, state: FSMContext):
+    await state.clear()
+    user = message.from_user
+    if user:
+        is_new = save_user(user.id, user.full_name, user.username)
+        if is_new:
+            logging.info(f"✨ YANGI: {user.full_name}")
+    await message.reply(f"Assalomu alaykum, {message.from_user.first_name}! \nO'zingizga kerakli bo'limni tanlang 👇", reply_markup=get_main_menu())
+
+@dp.message(F.text == "🧠 AI Repetitor")
+async def ai_repetitor_start(message: types.Message, state: FSMContext):
+    await state.clear()
+    await message.reply("🧠 <b>AI Repetitor</b> rejimi faol!\n\nMenga istalgan savolingizni bering (Masalan: 'Nyuton qonunlarini tushuntirib ber'), men sizga qisqa va aniq tushuntirib beraman!", parse_mode="HTML")
+
+@dp.message(F.text == "🕒 Namoz vaqtlari")
+async def namoz_times(message: types.Message, state: FSMContext):
+    await state.clear()
+    import aiohttp
+    async with aiohttp.ClientSession() as session:
+        async with session.get("https://islomapi.uz/api/present/day?region=Toshkent") as resp:
+            if resp.status == 200:
+                data = await resp.json()
+                times = data.get("times", {})
+                text = (f"🕌 <b>Toshkent shahri uchun namoz vaqtlari:</b>\n\n"
+                        f"📅 Sana: {data.get('date')}\n"
+                        f"🌅 Bomdod: {times.get('tong_saharlik')}\n"
+                        f"☀️ Quyosh: {times.get('quyosh')}\n"
+                        f"🌞 Peshin: {times.get('peshin')}\n"
+                        f"🌤 Asr: {times.get('asr')}\n"
+                        f"🌇 Shom: {times.get('shom_iftor')}\n"
+                        f"🌃 Xufton: {times.get('hufton')}\n")
+                await message.reply(text, parse_mode="HTML")
+            else:
+                await message.reply("Kechirasiz, namoz vaqtlarini olishda xatolik yuz berdi.")
+
+@dp.message(F.text == "📈 Valyuta kursi")
+async def valyuta_rates(message: types.Message, state: FSMContext):
+    await state.clear()
+    import aiohttp
+    async with aiohttp.ClientSession() as session:
+        async with session.get("https://cbu.uz/uz/arkhiv-kursov-valyut/json/") as resp:
+            if resp.status == 200:
+                data = await resp.json()
+                text = "📈 <b>Markaziy Bank kunlik kurslari:</b>\n\n"
+                for item in data:
+                    if item["Ccy"] == "USD":
+                        text += f"🇺🇸 1 {item['Ccy']} = {item['Rate']} UZS\n"
+                    elif item["Ccy"] == "EUR":
+                        text += f"🇪🇺 1 {item['Ccy']} = {item['Rate']} UZS\n"
+                    elif item["Ccy"] == "RUB":
+                        text += f"🇷🇺 1 {item['Ccy']} = {item['Rate']} UZS\n"
+                text += f"\n📅 Sana: {data[0].get('Date', 'Nomalum')}"
+                await message.reply(text, parse_mode="HTML")
+            else:
+                await message.reply("Xatolik! Valyuta kurslarini olib bo'lmadi.")
+
+@dp.message(F.text == "📝 Text-to-Audio")
+async def start_audio(message: types.Message, state: FSMContext):
+    await state.set_state(BotStates.waiting_for_audio_text)
+    await message.reply("🎤 <b>Matnni yuboring!</b>\nIltimos, audioga aylantirmoqchi bo'lgan ma'lumotni yozib yuboring (O'qishga vaqtingiz yo'q matnlar bo'lsa ajoyib!):", parse_mode="HTML", reply_markup=types.ReplyKeyboardRemove())
+
+@dp.message(BotStates.waiting_for_audio_text)
+async def process_audio(message: types.Message, state: FSMContext):
+    text = message.text
+    if not text:
+        return
+    sent_message = await message.reply("⏳ <i>Ovoz yozilmoqda... Iltimos kuting</i>", parse_mode="HTML")
+    file_name = f"audio_{message.from_user.id}_{int(time.time())}.mp3"
+    try:
+        def generate_audio():
+            tts = gTTS(text=text, lang="uz")
+            tts.save(file_name)
+        
+        await asyncio.to_thread(generate_audio)
+        voice = FSInputFile(file_name)
+        await message.reply_voice(voice=voice)
+        os.remove(file_name)
+        await state.clear()
+        try:
+            await sent_message.delete()
+        except TelegramBadRequest:
+            pass
+        await message.answer("✅ Tayyor! Bosh menyuga qaytdik.", reply_markup=get_main_menu())
+    except Exception as e:
+        logging.error(f"TTS Error: {e}")
+        await sent_message.edit_text("Ovoz yaratishda xatolik yuz berdi. Matnni qisqaroq yoki maxsus belgilarsiz yuborib ko'ring.")
+        await state.clear()
+        await message.answer("Bosh menyu", reply_markup=get_main_menu())
+
 @dp.message(F.text)
-async def chat_with_ai(message: types.Message):
+async def chat_with_ai(message: types.Message, state: FSMContext):
     user = message.from_user
     if user is None or message.text is None:
         return
