@@ -5,12 +5,12 @@
         "reportUnknownMemberType": "none",
         "reportMissingTypeStubs": "none",
         "reportUnknownVariableType": "none",
-        "reportUnknownArgumentType": "none",
-        "reportGeneralTypeIssues": "none",
-        "reportMissingModuleSource": "none"
+        "reportUnknownArgumentType": "none"
     },
-    "pyre2.pythonPath": "${workspaceFolder}/venv/Scripts/python.exe",
-    "pyre2.extraPaths": [
-        "${workspaceFolder}/venv/Lib/site-packages"
+    "pyre.pythonExecutable": "${workspaceFolder}/venv/Scripts/python.exe",
+    "pyre2.pythonExecutable": "${workspaceFolder}/venv/Scripts/python.exe",
+    "python.terminal.activateEnvironment": true,
+    "python.analysis.extraPaths": [
+        "c:/Users/Diyorbek/Desktop/projects/telegram bot/venv/Lib/site-packages"
     ]
 }

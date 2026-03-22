@@ -1,8 +1,8 @@
 {
   "source_directories": [
-    "."
+    "c:/Users/Diyorbek/Desktop/projects/telegram bot"
   ],
   "search_path": [
-    "venv/Lib/site-packages"
+    "c:/Users/Diyorbek/Desktop/projects/telegram bot/venv/Lib/site-packages"
   ]
 }

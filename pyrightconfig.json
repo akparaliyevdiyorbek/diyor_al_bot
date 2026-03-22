@@ -1,7 +1,7 @@
 {
-  "venvPath": ".",
+  "venvPath": "c:/Users/Diyorbek/Desktop/projects/telegram bot",
   "venv": "venv",
   "extraPaths": [
-    "venv/Lib/site-packages"
+    "c:/Users/Diyorbek/Desktop/projects/telegram bot/venv/Lib/site-packages"
   ]
 }

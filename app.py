@@ -93,11 +93,13 @@ async def bot_stats(message: types.Message):
 async def start_cmd(message: types.Message, state: FSMContext):
     await state.clear()
     user = message.from_user
-    if user:
-        is_new = save_user(user.id, user.full_name, user.username)
-        if is_new:
-            logging.info(f"✨ YANGI: {user.full_name}")
-    await message.reply(f"Assalomu alaykum, {message.from_user.first_name}! \nO'zingizga kerakli bo'limni tanlang 👇", reply_markup=get_main_menu())
+    if not user:
+        return
+        
+    is_new = save_user(user.id, user.full_name, user.username)
+    if is_new:
+        logging.info(f"✨ YANGI: {user.full_name}")
+    await message.reply(f"Assalomu alaykum, {user.first_name}! \nO'zingizga kerakli bo'limni tanlang 👇", reply_markup=get_main_menu())
 
 @dp.message(F.text == "🧠 AI Repetitor")
 async def ai_repetitor_start(message: types.Message, state: FSMContext):
@@ -154,10 +156,11 @@ async def start_audio(message: types.Message, state: FSMContext):
 @dp.message(BotStates.waiting_for_audio_text)
 async def process_audio(message: types.Message, state: FSMContext):
     text = message.text
-    if not text:
+    user = message.from_user
+    if not text or not user:
         return
     sent_message = await message.reply("⏳ <i>Ovoz yozilmoqda... Iltimos kuting</i>", parse_mode="HTML")
-    file_name = f"audio_{message.from_user.id}_{int(time.time())}.mp3"
+    file_name = f"audio_{user.id}_{int(time.time())}.mp3"
     try:
         def generate_audio():
             tts = gTTS(text=text, lang="uz")
