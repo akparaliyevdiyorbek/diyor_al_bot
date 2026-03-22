@@ -1,8 +1,12 @@
 {
   "source_directories": [
+    ".",
+    "c:/Users/Diyorbek/OneDrive/Desktop/projects/telegram bot",
     "c:/Users/Diyorbek/Desktop/projects/telegram bot"
   ],
   "search_path": [
+    "venv/Lib/site-packages",
+    "c:/Users/Diyorbek/OneDrive/Desktop/projects/telegram bot/venv/Lib/site-packages",
     "c:/Users/Diyorbek/Desktop/projects/telegram bot/venv/Lib/site-packages"
   ]
 }

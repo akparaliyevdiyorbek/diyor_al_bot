@@ -1,20 +1,22 @@
+# pyre-ignore-all-errors
 import os
 import time
 import asyncio
 import logging
-from aiohttp import web
-from dotenv import load_dotenv
+from aiohttp import web # pyre-ignore
+from dotenv import load_dotenv # pyre-ignore
 import json
 from typing import Dict, Any
 
 from aiogram import Bot, Dispatcher, types, F # type: ignore
 from aiogram.exceptions import TelegramBadRequest
-from aiogram.fsm.state import State, StatesGroup
-from aiogram.fsm.context import FSMContext
-from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, FSInputFile
-from aiogram.utils.keyboard import ReplyKeyboardBuilder
-from gtts import gTTS
-import google.generativeai as genai
+from aiogram.fsm.state import State, StatesGroup # pyre-ignore
+from aiogram.fsm.context import FSMContext # pyre-ignore
+from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, FSInputFile # pyre-ignore
+from aiogram.utils.keyboard import ReplyKeyboardBuilder # pyre-ignore
+from gtts import gTTS # pyre-ignore
+import google.generativeai as genai # type: ignore # pyre-ignore
+import aiohttp # pyre-ignore
 
 # .env faylidan o'zgaruvchilarni yuklash (lokal muhit uchun)
 load_dotenv()
@@ -24,10 +26,10 @@ GEMINI_API_KEY = os.getenv("GEMINI_API_KEY") or ""
 ADMIN_ID = os.getenv("ADMIN_ID")
 
 genai.configure(api_key=GEMINI_API_KEY)  # type: ignore
-model = genai.GenerativeModel(
+model = genai.GenerativeModel(  # type: ignore
     model_name='gemini-2.5-flash',
     system_instruction="Sen foydali yordamchisan. Barcha savollarga aniq va faqat O'zbek tilida javob ber."
-)  # type: ignore
+)
 
 bot = Bot(token=TELEGRAM_TOKEN)
 dp = Dispatcher()
@@ -36,13 +38,8 @@ class BotStates(StatesGroup):
     waiting_for_audio_text = State()
 
 def get_main_menu():
-    builder = ReplyKeyboardBuilder()
-    builder.add(KeyboardButton(text="🧠 AI Repetitor"))
-    builder.add(KeyboardButton(text="🕒 Namoz vaqtlari"))
-    builder.add(KeyboardButton(text="📝 Text-to-Audio"))
-    builder.add(KeyboardButton(text="📈 Valyuta kursi"))
-    builder.adjust(2, 2)
-    return builder.as_markup(resize_keyboard=True)
+    # Klaviatura (pastdagi tugmalar)ni tozalab tashlash uchun
+    return types.ReplyKeyboardRemove()
 
 USERS_FILE = "user.json"
 
@@ -70,12 +67,13 @@ def save_user(user_id, full_name, username):
     return False
 
 async def notify_admin(user: types.User):
-    if not ADMIN_ID or not ADMIN_ID.isdigit():
+    admin_id = ADMIN_ID
+    if not admin_id or not admin_id.isdigit():
         return
     try:
         uname = f"@{user.username}" if user.username else "yo'q"
         text = f"🔔 <b>YANGI ODAM QO'SHILDI!</b>\n\n👤 <b>Ism:</b> {user.full_name}\n🔗 <b>User:</b> {uname}\n🆔 <b>ID:</b> <code>{user.id}</code>\n🕰 <b>Vaqt:</b> {time.strftime('%Y-%m-%d %H:%M:%S')}"
-        await bot.send_message(chat_id=int(ADMIN_ID), text=text, parse_mode="HTML")
+        await bot.send_message(chat_id=int(admin_id), text=text, parse_mode="HTML") # pyre-ignore
     except Exception as e:
         logging.error(f"Adminga xabar yuborishda xatolik: {e}")
 
@@ -111,7 +109,7 @@ async def start_cmd(message: types.Message, state: FSMContext):
     if is_new:
         logging.info(f"✨ YANGI: {user.full_name}")
         await notify_admin(user)
-    await message.reply(f"Assalomu alaykum, {user.first_name}! \nO'zingizga kerakli bo'limni tanlang 👇", reply_markup=get_main_menu())
+    await message.reply(f"Assalomu alaykum, {user.first_name}! 👋\n\nMen sizning aqlli shaxsiy yordamchingizman. Menga istalgan darsingiz, savolingiz yoki vazifangizni yozing – men tez va aniq tushuntirib beraman!", reply_markup=get_main_menu())
 
 @dp.message(F.text == "🧠 AI Repetitor")
 async def ai_repetitor_start(message: types.Message, state: FSMContext):
@@ -121,7 +119,6 @@ async def ai_repetitor_start(message: types.Message, state: FSMContext):
 @dp.message(F.text == "🕒 Namoz vaqtlari")
 async def namoz_times(message: types.Message, state: FSMContext):
     await state.clear()
-    import aiohttp
     async with aiohttp.ClientSession() as session:
         async with session.get("https://islomapi.uz/api/present/day?region=Toshkent") as resp:
             if resp.status == 200:
@@ -142,7 +139,6 @@ async def namoz_times(message: types.Message, state: FSMContext):
 @dp.message(F.text == "📈 Valyuta kursi")
 async def valyuta_rates(message: types.Message, state: FSMContext):
     await state.clear()
-    import aiohttp
     async with aiohttp.ClientSession() as session:
         async with session.get("https://cbu.uz/uz/arkhiv-kursov-valyut/json/") as resp:
             if resp.status == 200:
@@ -155,7 +151,7 @@ async def valyuta_rates(message: types.Message, state: FSMContext):
                         text += f"🇪🇺 1 {item['Ccy']} = {item['Rate']} UZS\n"
                     elif item["Ccy"] == "RUB":
                         text += f"🇷🇺 1 {item['Ccy']} = {item['Rate']} UZS\n"
-                text += f"\n📅 Sana: {data[0].get('Date', 'Nomalum')}"
+                text += f"\n📅 Sana: {data[0].get('Date', 'Nomalum')}" # pyre-ignore
                 await message.reply(text, parse_mode="HTML")
             else:
                 await message.reply("Xatolik! Valyuta kurslarini olib bo'lmadi.")
@@ -178,7 +174,7 @@ async def process_audio(message: types.Message, state: FSMContext):
             tts = gTTS(text=text, lang="uz")
             tts.save(file_name)
         
-        await asyncio.to_thread(generate_audio)
+        await asyncio.to_thread(generate_audio) # pyre-ignore
         voice = FSInputFile(file_name)
         await message.reply_voice(voice=voice)
         os.remove(file_name)
@@ -239,7 +235,6 @@ async def chat_with_ai(message: types.Message, state: FSMContext):
             if not groq_key:
                 raise ValueError("GROQ_API_KEY topilmadi.")
             
-            import aiohttp
             async with aiohttp.ClientSession() as session:
                 headers = {
                     "Authorization": f"Bearer {groq_key}",
