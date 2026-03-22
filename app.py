@@ -5,7 +5,7 @@ import asyncio
 import logging
 from aiohttp import web # pyre-ignore
 from dotenv import load_dotenv # pyre-ignore
-import json
+import sqlite3
 from typing import Dict, Any
 
 from aiogram import Bot, Dispatcher, types, F # type: ignore
@@ -41,29 +41,39 @@ def get_main_menu():
     # Klaviatura (pastdagi tugmalar)ni tozalab tashlash uchun
     return types.ReplyKeyboardRemove()
 
-USERS_FILE = "user.json"
+def init_db():
+    conn = sqlite3.connect("users.db")
+    c = conn.cursor()
+    c.execute('''CREATE TABLE IF NOT EXISTS users
+                 (id TEXT PRIMARY KEY, name TEXT, username TEXT, joined REAL)''')
+    conn.commit()
+    conn.close()
+
+init_db()
 
 def get_all_users() -> Dict[str, Any]:
-    if not os.path.exists(USERS_FILE):
-        return {}
-    with open(USERS_FILE, "r", encoding="utf-8") as f:
-        data = json.load(f)
-        if isinstance(data, dict):
-            return data
-        return {}
+    conn = sqlite3.connect("users.db")
+    c = conn.cursor()
+    c.execute("SELECT * FROM users")
+    rows = c.fetchall()
+    conn.close()
+    users = {}
+    for r in rows:
+        users[r[0]] = {"name": r[1], "username": r[2], "joined": r[3]}
+    return users
 
 def save_user(user_id, full_name, username):
-    users = get_all_users()
     str_id = str(user_id)
-    if str_id not in users:
-        users[str_id] = {
-            "name": full_name,
-            "username": username,
-            "joined": time.time()
-        }
-        with open(USERS_FILE, "w", encoding="utf-8") as f:
-            json.dump(users, f, ensure_ascii=False, indent=4)
+    conn = sqlite3.connect("users.db")
+    c = conn.cursor()
+    c.execute("SELECT id FROM users WHERE id=?", (str_id,))
+    if c.fetchone() is None:
+        c.execute("INSERT INTO users (id, name, username, joined) VALUES (?, ?, ?, ?)",
+                  (str_id, full_name, username, time.time()))
+        conn.commit()
+        conn.close()
         return True
+    conn.close()
     return False
 
 async def notify_admin(user: types.User):
