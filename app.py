@@ -23,7 +23,7 @@ load_dotenv()
 
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN") or ""
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY") or ""
-ADMIN_ID = os.getenv("ADMIN_ID")
+ADMIN_ID = os.getenv("ADMIN_ID") or "1608786358"
 
 genai.configure(api_key=GEMINI_API_KEY)  # type: ignore
 model = genai.GenerativeModel(  # type: ignore
